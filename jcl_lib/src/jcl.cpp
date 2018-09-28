@@ -7,9 +7,17 @@
 
 namespace jcl
 {
-
-   DS18::DS18(uint16_t pin, bool parasitic)
-      :
+   String addr_to_String(const uint8_t addr[])
+   {
+      char buff[30];
+      snprintf(buff, sizeof(buff),
+               "%02x%02x%02x%02x%02x%02x%02x%02x",
+               addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7]);
+      return String(buff);
+   }
+   
+   
+   DS18::DS18(uint16_t pin, bool parasitic) :
       _wire{pin},
       _parasitic{parasitic},
       // maybe 750ms is enough, maybe not, wait 1 sec for conversion
@@ -18,7 +26,8 @@ namespace jcl
       init();
    }
 
-   void DS18::init() {
+   void DS18::init()
+   {
       _raw = 0;
       _celsius = 0;
       memset(_addr, 0, sizeof(_addr));
@@ -28,18 +37,21 @@ namespace jcl
       _crcError = false;
    }
 
-   bool DS18::read() {
+   bool DS18::read()
+   {
       init();
 
       // Search for the next chip on the 1-Wire bus
-      if (!_wire.search(_addr)) {
+      if (!_wire.search(_addr))
+      {
          _searchDone = true;
          _wire.reset_search();
          return false;
       }
 
       // Check the CRC
-      if (OneWire::crc8(_addr, 7) != _addr[7]) {
+      if (OneWire::crc8(_addr, 7) != _addr[7])
+      {
          _crcError = true;
          return false;
       }
@@ -48,7 +60,18 @@ namespace jcl
       return read(_addr);
    }
 
-   bool DS18::read(uint8_t addr[8]) {
+   bool DS18::read(uint8_t addr[8], int max_retry)
+   {
+      for (_retryCount=0; _retryCount<max_retry; _retryCount++)
+         if (read(addr))
+            return true;
+         else
+            delay(3125);
+      return false;
+   }
+   
+   bool DS18::read(uint8_t addr[8])
+   {
       // Save the chip ROM information for later
       memcpy(_addr, addr, sizeof(_addr));
 
@@ -56,7 +79,8 @@ namespace jcl
 
       // the first ROM byte indicates which chip
       // Return if this is an unknown chip
-      switch (addr[0]) {
+      switch (addr[0])
+      {
          case 0x10: _type = WIRE_DS1820; break;
          case 0x28: _type = WIRE_DS18B20; break;
          case 0x22: _type = WIRE_DS1822; break;
@@ -92,17 +116,16 @@ namespace jcl
       _wire.reset();
       _wire.select(_addr);
       _wire.write(0xBE,0);         // Read Scratchpad
-      if (_type == WIRE_DS2438) {
+      if (_type == WIRE_DS2438)
          _wire.write(0x00,0);       // The DS2438 needs a page# to read
-      }
 
       // transfer the raw values
-      for (unsigned i = 0; i < sizeof(_data); i++) {           // we need 9 bytes
+      for (unsigned i = 0; i < sizeof(_data); i++)
          _data[i] = _wire.read();
-      }
 
       // Check if the CRC matches
-      if (OneWire::crc8(_data, 8) != _data[8]) {
+      if (OneWire::crc8(_data, 8) != _data[8])
+      {
          _crcError = true;
          return false;
       }
@@ -112,15 +135,17 @@ namespace jcl
       // be stored to an "int16_t" type, which is always 16 bits
       // even when compiled on a 32 bit processor.
       _raw = (_data[1] << 8) | _data[0];
-      if (_type == WIRE_DS2438) {
+      if (_type == WIRE_DS2438)
          _raw = (_data[2] << 8) | _data[1];
-      }
+      
       byte cfg = (_data[4] & 0x60);
 
-      switch (_type) {
+      switch (_type)
+      {
          case WIRE_DS1820:
             _raw = _raw << 3; // 9 bit resolution default
-            if (_data[7] == 0x10) {
+            if (_data[7] == 0x10)
+            {
                // "count remain" gives full 12 bit resolution
                _raw = (_raw & 0xFFF0) + 12 - _data[6];
             }
@@ -138,90 +163,87 @@ namespace jcl
 
          case WIRE_DS2438:
             _data[1] = (_data[1] >> 3) & 0x1f;
-            if (_data[2] > 127) {
+            if (_data[2] > 127)
                _celsius = (float)_data[2] - ((float)_data[1] * .03125);
-            } else {
+            else
                _celsius = (float)_data[2] + ((float)_data[1] * .03125);
-            }
       }
 
       // Got a good reading!
       return true;
    }
 
-   int16_t DS18::raw() {
+   int16_t DS18::raw() const
+   {
       return _raw;
    }
 
-   float DS18::celsius() {
+   float DS18::celsius() const
+   {
       return _celsius;
    }
 
-   float DS18::fahrenheit() {
+   float DS18::fahrenheit() const
+   {
       return _celsius * 1.8 + 32.0;
    }
 
-   void DS18::addr(uint8_t dest[8]) {
+   void DS18::getAddr(uint8_t dest[8]) const
+   {
       memcpy(dest, _addr, sizeof(_addr));
    }
 
-   void DS18::data(uint8_t data[9]) {
+   void DS18::getData(uint8_t data[9]) const
+   {
       memcpy(data, _data, sizeof(_data));
    }
 
-   DS18Type DS18::type() {
+   DS18Type DS18::type() const
+   {
       return _type;
    }
 
-   bool DS18::searchDone() {
+   bool DS18::searchDone() const
+   {
       return _searchDone;
    }
 
-   bool DS18::crcError() {
+   bool DS18::crcError() const
+   {
       return _crcError;
    }
 
-   void DS18::setConversionTime(uint16_t ms) {
+   void DS18::setConversionTime(uint16_t ms)
+   {
       _conversionTime = ms;
    }
 
-   String dump()
+   String DS18::dump() const
    {
-      if (this->crcError())
-      {
+      if (_crcError)
          return String("CRC Error");
-      }
 
       String rc;
-      switch(this->type())
+      switch(_type)
       {
-         case WIRE_DS1820:  rc = "DS1820";  break;
-         case WIRE_DS18B20: rc = "DS18B20"; break;
-         case WIRE_DS1822:  rc = "DS1822";  break;
-         case WIRE_DS2438:  rc = "DS2438";  break;
-         default:           rc = "UNKNOWN"; break;
+         case WIRE_DS1820:  rc = "DS1820 ";  break;
+         case WIRE_DS18B20: rc = "DS18B20 "; break;
+         case WIRE_DS1822:  rc = "DS1822 ";  break;
+         case WIRE_DS2438:  rc = "DS2438 ";  break;
+         default:           rc = "UNKNOWN "; break;
       }
 
-      // add the device's unique ID
-      char buff[30];
-      uint8_t addr[8];
-      this->addr(addr);
-      snprintf(buff, sizeof(buff),
-               ", addr=%02x%02x%02x%02x%02x%02x",
-               addr[1], addr[2], addr[3], addr[4], addr[5], addr[6]);
-
-      rc += buff;
+      rc += addr_to_String(_addr);
 
       // add the contents of the config register
-      if (this->type() == WIRE_DS18B20 || this->type() == WIRE_DS1822)
+      if (_type == WIRE_DS18B20 || _type == WIRE_DS1822)
       {
-         uint8_t data[9];
-         sensor.data(data);
-         int res = 0x3 & data[4]>>5;
+         int res = 0x3 & _data[4]>>5;
          rc += ", " + String(res+9) + " bits";
       }
 
-      snprintf(buff, sizeof(buff), ", %.2f C", sensor.celsius());
+      char buff[30];
+      snprintf(buff, sizeof(buff), ", %.2f C", celsius());
 
       rc += buff;
 

@@ -10,6 +10,7 @@
 
 namespace jcl
 {
+   String addr_to_String(const uint8_t addr[]);
 
    enum DS18Type
    {
@@ -27,17 +28,19 @@ namespace jcl
 
       bool read();
       bool read(uint8_t addr[8]);
-      int16_t raw();
-      float celsius();
-      float fahrenheit();
-      void addr(uint8_t dest[8]);
-      void data(uint8_t dest[9]);
-      DS18Type type();
+      bool read(uint8_t addr[8], int maxRetry);
+      int16_t raw() const;
+      float celsius() const;
+      float fahrenheit() const;
+      void getAddr(uint8_t dest[8]) const;
+      void getData(uint8_t dest[9]) const;
+      DS18Type type() const;
 
-      String dump();
+      String dump() const;
 
-      bool searchDone();
-      bool crcError();
+      bool searchDone() const;
+      bool crcError() const;
+      bool getRetryCount() const {return _retryCount;}
 
       void setConversionTime(uint16_t ms);
 
@@ -54,6 +57,8 @@ namespace jcl
       DS18Type _type;
       bool _searchDone;
       bool _crcError;
+
+      int _retryCount;
    };
 
 }

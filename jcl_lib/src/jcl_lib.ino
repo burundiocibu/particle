@@ -4,49 +4,64 @@
 
 #include "jcl.h"
 
-jcl::DS18 sensor(D4, true);
-int sensorNum=0;
+jcl::DS18 sensor(D4, false);
 int ow_vcc=D5;
 int ow_gnd=D3;
 
-String msg;
+const int MAX_SENSORS = 10;
+retained uint8_t addr[MAX_SENSORS][8];
+retained int num_sensors = 0;
+
+
 
 void setup()
 {
-  Serial.begin(9600);
+   Serial.begin(9600);
 
-  pinMode(ow_vcc, OUTPUT);
-  pinMode(ow_gnd, OUTPUT);
-  digitalWrite(ow_vcc, HIGH);
-  digitalWrite(ow_gnd, LOW);
-
-  Particle.variable("status", msg);
+   pinMode(ow_vcc, OUTPUT);
+   pinMode(ow_gnd, OUTPUT);
+   digitalWrite(ow_vcc, HIGH);
+   digitalWrite(ow_gnd, LOW);
 }
 
 void loop()
 {
-  // Read the next available 1-Wire temperature sensor
-  if (sensor.read())
-  {
-    String msg = jcl::DS18_dump(sensor);
-    Serial.printf(msg);
-    Serial.printf("\n");
-    Particle.publish("sensor", msg, PRIVATE);
-    sensorNum++;
-  }
-  else
-  {
-    // Once all sensors have been read you'll get searchDone() == true
-    // Next time read() is called the first sensor is read again
-    if (sensor.searchDone())
-    {
-      msg = "Found " + String(sensorNum) + " sensors";
-      Serial.println(msg);
-      Particle.publish("sensor", msg, PRIVATE);
-      sensorNum = 0;
-      delay(10000);
-    }
-    else
-      Serial.printf(DS18_dump(sensor));
-  }
+   if (Serial.available())
+   {
+      // clear out the input buffer...
+      while(Serial.available())
+         Serial.read();
+
+      Serial.println("Scanning bus");
+      num_sensors = 0;
+   
+      while (true)
+      {
+         sensor.setConversionTime(750);
+         if (sensor.read())
+         {
+            Serial.printf("sensor %d: ", num_sensors);
+            Serial.println(sensor.dump());
+            sensor.getAddr(addr[num_sensors]);
+            num_sensors++;
+         }
+         if (sensor.searchDone())
+            break;
+         Particle.process();
+      }
+      Serial.printlnf("Found %d sensors\n", num_sensors);
+   }
+   else if (num_sensors)
+   {
+      for (int i=0; i<num_sensors; i++)
+      {
+         Serial.printf("sensor %d: 0x", i);
+         Serial.printf(jcl::addr_to_String(addr[i]));
+         if (sensor.read(addr[i], 5))
+            Serial.printlnf(", %6.3f (%d)", sensor.celsius(), sensor.getRetryCount());
+         else
+            Serial.printlnf("read error (%d)", sensor.getRetryCount());
+      }
+      Serial.println("");
+   }
 }
