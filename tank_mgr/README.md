@@ -19,21 +19,24 @@ curl https://api.particle.io/v1/devices/24002c000447363333343435/led \
 
 # Controller
 This is a Particle photon plugged into on adaptor board. The board brings out
-```
-VIN - 5 VDC power supply
-GND - power suppy ground
 
-D5 - OW_Vcc   RJ45 2
-D4 - OW_data  RJ45 4
-D3 - OW_gnd   RJ45 5
+Pin | Function | Connection
+--- | -------- | ----------
+VIN |          | power supply +5 VDC
+GND |          | power suppy ground
+    |          |
+D5  | OW_Vcc   | J1-2
+D4  | OW_data  | J1-4
+D3  | OW_gnd   | J1-5
+    |          |
+TX  | WH_tx    | J2-tip
+RX  | WH rx    | J2-ring
 
-TX - Water height sensor
-RX - 
-```
+* J1 is an RJ45 jack
+* J2 is a 1/8" trs jack, shield connected to ground
 
 D4 has a 2k pullup to V3.3 and a soldered in DS1820, address
 f2f2ed010800.
-
 
 # Temperature sensor cable
 This is a 30' length of cat5 with 18B20 sensors embedded along the
