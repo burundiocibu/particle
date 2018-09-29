@@ -24,11 +24,9 @@ Pin | Function | Connection
 --- | -------- | ----------
 VIN |          | power supply +5 VDC
 GND |          | power suppy ground
-    |          |
 D5  | OW_Vcc   | J1-2
 D4  | OW_data  | J1-4
 D3  | OW_gnd   | J1-5
-    |          |
 TX  | WH_tx    | J2-tip
 RX  | WH rx    | J2-ring
 
