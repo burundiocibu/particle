@@ -2,20 +2,29 @@
  */
 
 #include "jcl.h"
-#include <string.h>
 
 
 namespace jcl
 {
+   Addr string_to_Addr(const String s)
+   {
+      uint8_t addr[8];
+      sscanf(s, "%02x%02x%02x%02x%02x%02x%02x%02x",
+             &addr[0], &addr[1], &addr[2], &addr[3],
+             &addr[4], &addr[5], &addr[6], &addr[7]);
+      return Addr(addr, addr+sizeof(addr));
+   }
+
+   
    String addr_to_String(const uint8_t addr[])
    {
       char buff[30];
-      snprintf(buff, sizeof(buff),
-               "%02x%02x%02x%02x%02x%02x%02x%02x",
-               addr[0], addr[1], addr[2], addr[3], addr[4], addr[5], addr[6], addr[7]);
+      snprintf(buff, sizeof(buff), "%02x%02x%02x%02x%02x%02x%02x%02x",
+               addr[0], addr[1], addr[2], addr[3],
+               addr[4], addr[5], addr[6], addr[7]);
       return String(buff);
    }
-   
+
    
    DS18::DS18(uint16_t pin, bool parasitic) :
       _wire{pin},
@@ -60,17 +69,17 @@ namespace jcl
       return read(_addr);
    }
 
-   bool DS18::read(uint8_t addr[8], int max_retry)
+   bool DS18::read(const Addr& addr, int max_retry)
    {
       for (_retryCount=0; _retryCount<max_retry; _retryCount++)
-         if (read(addr))
+         if (read(addr.data()))
             return true;
          else
-            delay(3125);
+            delay(3*_conversionTime);
       return false;
    }
    
-   bool DS18::read(uint8_t addr[8])
+   bool DS18::read(const uint8_t addr[8])
    {
       // Save the chip ROM information for later
       memcpy(_addr, addr, sizeof(_addr));
@@ -124,11 +133,9 @@ namespace jcl
          _data[i] = _wire.read();
 
       // Check if the CRC matches
-      if (OneWire::crc8(_data, 8) != _data[8])
-      {
-         _crcError = true;
+      _crcError = OneWire::crc8(_data, 8) != _data[8];
+      if (_crcError)
          return false;
-      }
 
       // Convert the data to actual temperature
       // because the result is a 16 bit signed integer, it should
@@ -220,33 +227,12 @@ namespace jcl
 
    String DS18::dump() const
    {
-      if (_crcError)
-         return String("CRC Error");
-
       String rc;
-      switch(_type)
-      {
-         case WIRE_DS1820:  rc = "DS1820 ";  break;
-         case WIRE_DS18B20: rc = "DS18B20 "; break;
-         case WIRE_DS1822:  rc = "DS1822 ";  break;
-         case WIRE_DS2438:  rc = "DS2438 ";  break;
-         default:           rc = "UNKNOWN "; break;
-      }
-
-      rc += addr_to_String(_addr);
-
-      // add the contents of the config register
-      if (_type == WIRE_DS18B20 || _type == WIRE_DS1822)
-      {
-         int res = 0x3 & _data[4]>>5;
-         rc += ", " + String(res+9) + " bits";
-      }
-
-      char buff[30];
-      snprintf(buff, sizeof(buff), ", %.2f C", celsius());
-
-      rc += buff;
-
+      rc += "addr=0x" + addr_to_String(_addr);
+      rc += ", t=" + String(celsius(), 3) + " C";
+      rc += ", rc=" + String(_retryCount);
+      if (_crcError)
+         rc += ", CRC error";      
       return rc;
    }
 

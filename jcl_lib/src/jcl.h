@@ -5,11 +5,18 @@
 //
 #pragma once
 
+#include <vector>
+#include <string>
+
 #include "Particle.h"
 #include "OneWire.h"
 
 namespace jcl
 {
+   typedef std::vector<uint8_t> Addr;
+   typedef std::vector<Addr> AddrVec;
+   
+   Addr string_to_Addr(const String s);
    String addr_to_String(const uint8_t addr[]);
 
    enum DS18Type
@@ -27,8 +34,8 @@ namespace jcl
       DS18(uint16_t pin, bool parasitic = false);
 
       bool read();
-      bool read(uint8_t addr[8]);
-      bool read(uint8_t addr[8], int maxRetry);
+      bool read(const uint8_t addr[8]);
+      bool read(const Addr& addr, int maxRetry);
       int16_t raw() const;
       float celsius() const;
       float fahrenheit() const;
