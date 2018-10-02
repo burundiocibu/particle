@@ -15,8 +15,8 @@ int ow_gnd=D3;
 typedef std::vector<uint8_t> Addr;
 typedef std::vector<Addr> AddrVec;
 
-double pipe_Tmin=0;
-double pipe_Tmax=0;
+double tmin_pipe=0;
+double tmax_pipe=0;
 
 // This is in the order of the sensors from the head of the pipe
 // to the end. The head is where the pipe goes into the ground to the
@@ -33,6 +33,7 @@ jcl::AddrVec pipeSensors = {
 // The sensor insde the tank_mgr's enclosure
 jcl::Addr particleSensor(jcl::string_to_Addr("10f2f2ed010800cb"));
 
+uint32_t last_publish=0;  // seconds since the unix epoch
 
 void setup()
 {
@@ -41,17 +42,17 @@ void setup()
   digitalWrite(ow_vcc, HIGH);
   digitalWrite(ow_gnd, LOW);
 
-  Particle.variable("pipe_Tmin", pipe_Tmin);
-  Particle.variable("pipe_Tmax", pipe_Tmax);
+  Particle.variable("tmin_pipe", tmin_pipe);
+  Particle.variable("tmax_pipe", tmax_pipe);
 }
 
 void loop()
 {
    sensor.read(particleSensor, 5);
-   Particle.publish("Tphoton", String(sensor.fahrenheit(), 3), PRIVATE);
-   
-   double t, t_min=999, t_max=-999;
-   int n=0;
+   double t_photon = sensor.fahrenheit();
+
+   // get the min/max temps along the pipe at this time
+   double t_min=999, t_max=-999;
    for (auto it = pipeSensors.begin(); it != pipeSensors.end(); ++it)
    {
       sensor.read(*it, 5);
@@ -59,9 +60,17 @@ void loop()
       if (t>t_max) t_max = t;
       if (t<t_min) t_min = t;
    }
-   String msg = "(" + String(t_min, 3) + ", " + String(t_max, 3) + ")";
-   Particle.publish("Tpipe", msg , PRIVATE);
-   pipe_Tmin = t_min;
-   pipe_Tmax = t_max;
-   delay(60000);
+   tmin_pipe = t_min;
+   tmax_pipe = t_max;
+
+   // Only publish data as events every 5 minutes
+   if (Time.now() - last_publish > 300)
+   {
+      Particle.publish("t_photon", String(t_photon, 3), PRIVATE);
+      Particle.publish("tmin_pipe", String(tmin_pipe, 3), PRIVATE);
+      Particle.publish("tmax_pipe", String(tmax_pipe, 3), PRIVATE);
+      last_publish = Time.now();
+   }
+   
+   delay(10000);
 }
