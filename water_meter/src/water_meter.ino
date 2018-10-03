@@ -77,7 +77,6 @@ void loop()
                        String(60 * dt, 2) + " sec" , PRIVATE);
 
 
-   // useage for current hour
    static int prev_hour=-1;
    if (Time.hour() != prev_hour)
    {
@@ -88,6 +87,7 @@ void loop()
       Particle.publish("usage",  msg, PRIVATE);
    }
    
+   // useage for current hour
    if (Time.hour() != prev_hour)
    {
       obs_hour.first = Time.now();
