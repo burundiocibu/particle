@@ -15,8 +15,8 @@ int ow_gnd=D3;
 typedef std::vector<uint8_t> Addr;
 typedef std::vector<Addr> AddrVec;
 
-double tmin_pipe=0;
-double tmax_pipe=0;
+String tmin_pipe_s;
+String tmax_pipe_s;
 
 // This is in the order of the sensors from the head of the pipe
 // to the end. The head is where the pipe goes into the ground to the
@@ -42,8 +42,8 @@ void setup()
   digitalWrite(ow_vcc, HIGH);
   digitalWrite(ow_gnd, LOW);
 
-  Particle.variable("tmin_pipe", tmin_pipe);
-  Particle.variable("tmax_pipe", tmax_pipe);
+  Particle.variable("tmin_pipe", tmin_pipe_s);
+  Particle.variable("tmax_pipe", tmax_pipe_s);
 }
 
 void loop()
@@ -60,15 +60,15 @@ void loop()
       if (t>t_max) t_max = t;
       if (t<t_min) t_min = t;
    }
-   tmin_pipe = t_min;
-   tmax_pipe = t_max;
+   tmin_pipe_s = String(t_min, 1);
+   tmax_pipe_s = String(t_max, 1);
 
    // Only publish data as events every 5 minutes
    if (Time.now() - last_publish > 300)
    {
-      Particle.publish("t_photon", String(t_photon, 3), PRIVATE);
-      Particle.publish("tmin_pipe", String(tmin_pipe, 3), PRIVATE);
-      Particle.publish("tmax_pipe", String(tmax_pipe, 3), PRIVATE);
+      Particle.publish("t_photon", String(t_photon, 2), PRIVATE);
+      Particle.publish("tmin_pipe", tmin_pipe_s, PRIVATE);
+      Particle.publish("tmax_pipe", tmax_pipe_s, PRIVATE);
       last_publish = Time.now();
    }
    

@@ -14,12 +14,15 @@ HRE_Reader reader(hre_clk, hre_data);
 // (the mechanical Recordall unit that was intsalled with the system)
 const double prior_usage = 167490.11;
 
-double total_usage; // total usage in galons
-double flow_rate;   // instantaneous flow in galons per minute
-double hour_usage;  // usage in the current hour
-double day_usage;   // usage for current day
-double week_usage;  // usage for current week
-double month_usage; // usage for current month
+
+// These vars are strings because the way doubles display on
+// homeassistant: full precision. 
+String total_usage_s; // total usage in galons
+String flow_rate_s;   // instantaneous flow in galons per minute
+String hour_usage_s;  // usage in the current hour
+String day_usage_s;   // usage for current day
+String week_usage_s;  // usage for current week
+String month_usage_s; // usage for current month
 
 typedef std::pair<unsigned long, double> Obs;
 typedef std::map<unsigned long, unsigned long> History;
@@ -32,17 +35,17 @@ retained Obs obs_hour, obs_day, obs_week, obs_month, obs_user;
 void setup()
 {
    // Current meter reading, in gallons
-   Particle.variable("total_usage", total_usage);
+   Particle.variable("total_usage", total_usage_s);
    // Instantanious flow rate, in gallons per minute
-   Particle.variable("flow_rate",  flow_rate);
+   Particle.variable("flow_rate",  flow_rate_s);
    // total number of HRE read errors since device start
    Particle.variable("read_errors", reader.read_errors);
 
    // Usage since various times
-   Particle.variable("hour_usage", hour_usage);
-   Particle.variable("day_usage",  day_usage);
-   Particle.variable("week_usage", week_usage);
-   Particle.variable("month_usage", month_usage);
+   Particle.variable("hour_usage", hour_usage_s);
+   Particle.variable("day_usage",  day_usage_s);
+   Particle.variable("week_usage", week_usage_s);
+   Particle.variable("month_usage", month_usage_s);
 }
 
 
@@ -66,11 +69,13 @@ void loop()
    if (curr.first < prev.first)
       return;
    
-   total_usage = curr.second + prior_usage;
+   double total_usage = curr.second + prior_usage;
+   total_usage_s = String(total_usage, 2);
 
    double use = curr.second - prev.second; // gallons
    double dt = 1.666e-5 * (curr.first - prev.first); // dt in minutes
-   flow_rate = use/dt;  // gallons per minute
+   double flow_rate = use/dt; // gallons/min
+   flow_rate_s = String(flow_rate, 3);
    if (flow_rate > 0)
       Particle.publish("rate", String(total_usage, 2) + " gal, " +
                        String(flow_rate, 2) + " gpm, " +
@@ -80,10 +85,10 @@ void loop()
    static int prev_hour=-1;
    if (Time.hour() != prev_hour)
    {
-      String msg = "hour:" + String(hour_usage, 2) +
-         ", day:" + String(day_usage, 0) +
-         ", week:" + String(week_usage, 0) +
-         ", month:" + String(month_usage, 0);
+      String msg = "hour:" + hour_usage_s +
+         ", day:" + day_usage_s +
+         ", week:" + week_usage_s +
+         ", month:" + month_usage_s;
       Particle.publish("usage",  msg, PRIVATE);
    }
    
@@ -94,7 +99,7 @@ void loop()
       obs_hour.second = total_usage;
       prev_hour = Time.hour();
    }
-   hour_usage = total_usage - obs_hour.second;
+   hour_usage_s = String(total_usage - obs_hour.second, 2);
 
    // useage for current day
    static int prev_day = -1;
@@ -104,7 +109,7 @@ void loop()
       obs_day.second = total_usage;
       prev_day = Time.day();
    }
-   day_usage = total_usage - obs_day.second;
+   day_usage_s = String(total_usage - obs_day.second, 1);
 
    // useage for current week
    static int prev_weekday = -1;
@@ -114,7 +119,7 @@ void loop()
       obs_week.second = total_usage;
       prev_weekday = Time.weekday();
    }
-   week_usage = total_usage - obs_week.second;
+   week_usage_s = String(total_usage - obs_week.second, 1);
 
    // usage for current month
    static int prev_month = -1;
@@ -124,6 +129,6 @@ void loop()
       obs_month.second = total_usage;
       prev_month = Time.month();
    }
-   month_usage = total_usage - obs_month.second;
+   month_usage_s = String(total_usage - obs_month.second, 1);
 
 }
