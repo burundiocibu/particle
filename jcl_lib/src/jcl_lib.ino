@@ -12,6 +12,10 @@ int ow_gnd=D3;
 
 jcl::AddrVec sensors;
 
+bool publish = false;
+
+bool scan_bus = false;
+
 void setup()
 {
   pinMode(ow_vcc, OUTPUT);
@@ -21,69 +25,83 @@ void setup()
 
   Particle.function("scanBus", scanBus);
   Particle.function("readList", readList);
+  Particle.function("readAddr", readAddr);
 }
 
 
 void loop()
 {
-   int i=0;
-   for (auto it = sensors.begin(); it != sensors.end(); ++it)
+   if (scan_bus)
    {
-      sensor.read(*it, 5);
-      String msg = "sensor " + String(i++) + ": " + sensor.dump();
-      Serial.println(msg);
-   }
+      Serial.println("Scanning bus");
+      sensors.clear();
    
-   if (sensors.size())
-      Serial.println("");
+      while (true)
+      {
+         sensor.setConversionTime(800);
+         if (sensor.read())
+         {
+            String msg = "sensor " + String(sensors.size()) + ": " + sensor.dump();
+            Serial.println(msg);
+            Particle.publish("scan", msg, PRIVATE);
+            uint8_t addr[8];
+            sensor.getAddr(addr);
+            sensors.push_back(jcl::Addr(addr, addr+sizeof(addr)));
+         }
+         if (sensor.searchDone())
+            break;
+      }
+   
+      String msg = "Found " + String(sensors.size()) + " sensors";
+      Serial.println(msg);
+      Particle.publish("scan", msg, PRIVATE);
+      scan_bus = false;
+   }
+   else
+   {
+      int i=0;
+      for (auto it = sensors.begin(); it != sensors.end(); ++it)
+      {
+         sensor.read(*it, 5);
+         String msg = String(i++) + ": " + sensor.dump();
+         Serial.println(msg);
+         if (publish)
+            Particle.publish("sensor", msg, PRIVATE);
+      }
+   
+      if (sensors.size())
+         Serial.println("");
+
+      publish = false;
+   }
 }
 
 
 int scanBus(String command)
 {
-   Serial.println("Scanning bus");
-   
-   uint8_t addr[8];
-   sensors.clear();
-   
-   while (true)
-   {
-      sensor.setConversionTime(750);
-      if (sensor.read())
-      {
-         String msg = "sensor " + String(sensors.size()) + ": " + sensor.dump();
-         Serial.println(msg);
-         Particle.publish("sensor", msg, PRIVATE);
-         sensor.getAddr(addr);
-         sensors.push_back(jcl::Addr(addr, addr+sizeof(addr)));
-      }
-      if (sensor.searchDone())
-         break;
-   }
-   
-   String msg = "Found " + String(sensors.size()) + " sensors";
-   Serial.println(msg);
-   Particle.publish("scan", msg, PRIVATE);
-   
-   return sensors.size();
+   scan_bus = true;
+   return 0;
 }
 
 
 int readList(String command)
 {
-   jcl::AddrVec sensors = {
-      jcl::string_to_Addr("10f0efed01080035"),
-      jcl::string_to_Addr("10b6bbed01080078"),
-      jcl::string_to_Addr("28ff37ef3118021d")
-   };
-
-   Serial.println("Reading listed sensors");
-
-   for (auto it = sensors.begin(); it != sensors.end(); ++it)
-   {
-      sensor.read(*it, 5);
-      Serial.println(sensor.dump());
-   }
+   publish = true;
    return 0;
 }
 
+
+int readAddr(String command)
+{
+   jcl::Addr addr(jcl::string_to_Addr(command));
+   Particle.publish("readAddr", "read " + command, PRIVATE);
+   int rc = 0;
+   if (sensor.read(addr, 5))
+   {
+      Particle.publish("readAddr", sensor.dump(), PRIVATE);
+      return 10 * sensor.fahrenheit();
+   }
+
+   Particle.publish("readAddr", "Failed to read " + command, PRIVATE);
+   return 0;
+}
