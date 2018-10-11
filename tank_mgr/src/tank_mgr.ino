@@ -14,6 +14,7 @@ int ow_gnd=D3;
 String tmin_pipe_s;
 String tmax_pipe_s;
 String t_photon_s;
+String t_ambient_s;
 
 void setup()
 {
@@ -25,6 +26,7 @@ void setup()
   Particle.variable("tmin_pipe", tmin_pipe_s);
   Particle.variable("tmax_pipe", tmax_pipe_s);
   Particle.variable("t_photon", t_photon_s);
+  Particle.variable("t_ambient", t_ambient_s);
 }
 
 
@@ -32,22 +34,26 @@ void setup()
 // to the end. The head is where the pipe goes into the ground to the
 // house, the end is where it comes out of the tank
 jcl::AddrVec pipeSensors = {
+   jcl::string_to_Addr("28ff870232180262"), // Pump head
    jcl::string_to_Addr("28ff2e553218011e"), // Closest to house
    jcl::string_to_Addr("28fffb05321802a8"),
    jcl::string_to_Addr("28ffa45132180166"),
    jcl::string_to_Addr("28ff0fee31180228"),
    jcl::string_to_Addr("28ff5e4f32180150"),
-   jcl::string_to_Addr("28ff7e07321802b6") // Closest to tanks
+   jcl::string_to_Addr("28ff7e07321802b6") // Closest to tank valve
    };
 
-// The sensor insde the tank_mgr's enclosure
-jcl::Addr particleSensor(jcl::string_to_Addr("10f2f2ed010800cb"));
+jcl::Addr t_photon_addr(jcl::string_to_Addr("10f2f2ed010800cb"));
+jcl::Addr t_ambient_addr(jcl::string_to_Addr("28ff99e33118017c"));
 
 void loop()
 {
-   if (sensor.read(particleSensor, 5))
+   if (sensor.read(t_photon_addr, 5))
       t_photon_s = String(sensor.fahrenheit(), 1);
 
+   if (sensor.read(t_ambient_addr, 5))
+      t_ambient_s = String(sensor.fahrenheit(), 1);
+   
    // get the min/max temps along the pipe at this time
    double t_min=999, t_max=-999;
    for (auto it = pipeSensors.begin(); it != pipeSensors.end(); ++it)
@@ -67,10 +73,9 @@ void loop()
    if (Time.now() - last_publish > 300)
    {
       Particle.publish("t_photon", t_photon_s, PRIVATE);
+      Particle.publish("t_ambient", t_ambient_s, PRIVATE);
       Particle.publish("tmin_pipe", tmin_pipe_s, PRIVATE);
       Particle.publish("tmax_pipe", tmax_pipe_s, PRIVATE);
       last_publish = Time.now();
    }
-   
-   delay(10000);
 }

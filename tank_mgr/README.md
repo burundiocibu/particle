@@ -22,10 +22,10 @@ RX  | `WH_rx`'  | J2-ring
 * J2 is a 1/8" trs jack, shield connected to ground
 
 D4 has a 2k pullup to V3.3 and a soldered in DS1820, address
-f2f2ed010800.
+0x10f2f2ed010800cb
 
 ## Temperature sensor cable
-This is a 30' length of cat5 with 18B20 sensors embedded along the
+This is a 25' length of cat5 with 18B20 sensors embedded along the
 lenght. I use the TIA86B pinouts for the termination of the cable into
 an RJ45 plug.
 
@@ -35,16 +35,20 @@ RJ45 Pin | Wire color | Function
 4        | blue       | `D0`
 5        | blue/wht   | `OW_gnd`
 
-DS18B20 Sensors, starting with closest to plug
+DS18B20 sensors addresses, starting with closest to plug
 
-No. | address
--- | ----------------
-1  | 28ff2e553218011e
-2  | 28fffb05321802a8
-3  | 28ffa45132180166
-4  | 28ff0fee31180228
-5  | 28ff5e4f32180150
-6  | 28ff7e07321802b6
+No. | address         | location
+-- | ---------------- | --------
+1  | 28ff99e33118017c | Ambient
+2  | 28ff870232180262 | Pump head
+3  | 28ff2e553218011e | pipe going into ground to house
+4  | 28fffb05321802a8 |
+5  | 28ffa45132180166 |
+5  | 28ff0fee31180228 |
+7  | 28ff5e4f32180150 |
+8  | 28ff7e07321802b6 | pipe by valve going into tank
+
+
 
 # Photon Web API
 
@@ -63,3 +67,4 @@ curl https://api.particle.io/v1/devices/24002c000447363333343435/events?access_t
 * `tmin_pipe`
 * `tmax_pipe`
 * `t_photon`
+* `t_ambient`
