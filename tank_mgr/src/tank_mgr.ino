@@ -15,6 +15,8 @@ String tmin_pipe_s;
 String tmax_pipe_s;
 String t_photon_s;
 String t_ambient_s;
+int read_errors=0;
+int range_errors=0;
 
 void setup()
 {
@@ -27,6 +29,9 @@ void setup()
   Particle.variable("tmax_pipe", tmax_pipe_s);
   Particle.variable("t_photon", t_photon_s);
   Particle.variable("t_ambient", t_ambient_s);
+
+  Particle.variable("read_errors", read_errors);
+  Particle.variable("range_errors", range_errors);
 }
 
 
@@ -56,6 +61,8 @@ void loop()
    
    // get the min/max temps along the pipe at this time
    double t_min=999, t_max=-999;
+   double t_sum=0;
+   int n_read;
    for (auto it = pipeSensors.begin(); it != pipeSensors.end(); ++it)
    {
       if (sensor.read(*it, 5))
@@ -64,18 +71,27 @@ void loop()
          if (t>t_max) t_max = t;
          if (t<t_min) t_min = t;
       }
+      else
+         read_errors++;
    }
-   tmin_pipe_s = String(t_min, 1);
-   tmax_pipe_s = String(t_max, 1);
+   if (t_max - t_min < 15)
+   {
+      tmin_pipe_s = String(t_min, 1);
+      tmax_pipe_s = String(t_max, 1);
+   }
+   else
+      range_errors++;
 
    // Only publish data as events every 5 minutes
    static uint32_t last_publish=0;  // seconds since the unix epoch
    if (Time.now() - last_publish > 300)
    {
       Particle.publish("t_photon", t_photon_s, PRIVATE);
-      Particle.publish("t_ambient", t_ambient_s, PRIVATE);
-      Particle.publish("tmin_pipe", tmin_pipe_s, PRIVATE);
-      Particle.publish("tmax_pipe", tmax_pipe_s, PRIVATE);
-      last_publish = Time.now();
+      #Particle.publish("t_ambient", t_ambient_s, PRIVATE);
+      #Particle.publish("tmin_pipe", tmin_pipe_s, PRIVATE);
+      #Particle.publish("tmax_pipe", tmax_pipe_s, PRIVATE);
+      #Particle.publish("read_errors", String(read_errors), PRIVATE);
+      #Particle.publish("range_errors", String(range_errors), PRIVATE);
+      #last_publish = Time.now();
    }
 }

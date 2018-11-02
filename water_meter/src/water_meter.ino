@@ -76,10 +76,10 @@ void loop()
    double dt = 1.666e-5 * (curr.first - prev.first); // dt in minutes
    double flow_rate = use/dt; // gallons/min
    flow_rate_s = String(flow_rate, 3);
-   if (flow_rate > 0)
-      Particle.publish("rate", String(total_usage, 2) + " gal, " +
-                       String(flow_rate, 2) + " gpm, " +
-                       String(60 * dt, 2) + " sec" , PRIVATE);
+//   if (flow_rate > 0)
+//      Particle.publish("rate", String(total_usage, 2) + " gal, " +
+//                       String(flow_rate, 2) + " gpm, " +
+//                       String(60 * dt, 2) + " sec" , PRIVATE);
 
 
    static int prev_hour=-1;

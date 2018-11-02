@@ -6,6 +6,8 @@ Please see Readme.md
 
 #include "jcl.h"
 
+#include "MAX17043.h"
+
 jcl::DS18 sensor(D4, true);
 int ow_vcc=D5;
 int ow_gnd=D3;
@@ -15,6 +17,10 @@ jcl::AddrVec sensors;
 bool publish = false;
 
 bool scan_bus = false;
+
+double voltage = 0;
+double soc = 0;
+bool alert;
 
 void setup()
 {
@@ -26,6 +32,21 @@ void setup()
   Particle.function("scanBus", scanBus);
   Particle.function("readList", readList);
   Particle.function("readAddr", readAddr);
+
+  Particle.variable("v_batt", voltage);
+  Particle.variable("soc", soc);
+  Particle.variable("alert", alert);
+
+  // Set up the MAX17043 LiPo fuel gauge:
+  lipo.begin(); // Initialize the MAX17043 LiPo fuel gauge
+
+  // Quick start restarts the MAX17043 in hopes of getting a more accurate
+  // guess for the SOC.
+  lipo.quickStart();
+  
+  // We can set an interrupt to alert when the battery SoC gets too low.
+  // We can alert at anywhere between 1% - 32%:
+  lipo.setThreshold(10); // Set alert threshold to 10%.
 }
 
 
@@ -74,6 +95,28 @@ void loop()
 
       publish = false;
    }
+
+   // lipo.getVoltage() returns a voltage value (e.g. 3.93)
+   voltage = lipo.getVoltage();
+   // lipo.getSOC() returns the estimated state of charge (e.g. 79%)
+   soc = lipo.getSOC();
+   // lipo.getAlert() returns a 0 or 1 (0=alert not triggered)
+   alert = lipo.getAlert();
+   
+   Serial.print("Voltage: ");
+   Serial.print(voltage);  // Print the battery voltage
+   Serial.println(" V");
+   
+   Serial.print("Alert: ");
+   Serial.println(alert);
+   
+   Serial.print("Percentage: ");
+   Serial.print(soc); // Print the battery state of charge
+   Serial.println(" %");
+   Serial.println();
+   
+   delay(500);
+
 }
 
 
