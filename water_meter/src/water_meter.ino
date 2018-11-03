@@ -17,12 +17,12 @@ const double prior_usage = 167490.11;
 
 // These vars are strings because the way doubles display on
 // homeassistant: full precision. 
-String total_usage_s; // total usage in galons
-String flow_rate_s;   // instantaneous flow in galons per minute
-String hour_usage_s;  // usage in the current hour
-String day_usage_s;   // usage for current day
-String week_usage_s;  // usage for current week
-String month_usage_s; // usage for current month
+char total_usage_s[12]; // total usage in galons
+char flow_rate_s[8];    // instantaneous flow in galons per minute
+char hour_usage_s[8];   // usage for hour day
+char day_usage_s[8];    // usage for current day
+char week_usage_s[8];   // usage for current week
+char month_usage_s[8];  // usage for current month
 
 typedef std::pair<unsigned long, double> Obs;
 typedef std::map<unsigned long, unsigned long> History;
@@ -70,12 +70,12 @@ void loop()
       return;
    
    double total_usage = curr.second + prior_usage;
-   total_usage_s = String(total_usage, 2);
+   snprintf (total_usage_s, sizeof(total_usage_s), "%.2f",total_usage );
 
    double use = curr.second - prev.second; // gallons
    double dt = 1.666e-5 * (curr.first - prev.first); // dt in minutes
    double flow_rate = use/dt; // gallons/min
-   flow_rate_s = String(flow_rate, 3);
+   snprintf(flow_rate_s, sizeof(flow_rate_s), "%.2f", flow_rate);
 //   if (flow_rate > 0)
 //      Particle.publish("rate", String(total_usage, 2) + " gal, " +
 //                       String(flow_rate, 2) + " gpm, " +
@@ -85,10 +85,10 @@ void loop()
    static int prev_hour=-1;
    if (Time.hour() != prev_hour)
    {
-      String msg = "hour:" + hour_usage_s +
-         ", day:" + day_usage_s +
-         ", week:" + week_usage_s +
-         ", month:" + month_usage_s;
+      char msg[128];
+      snprintf(msg, sizeof(msg), "hour:%s, day:%s, week:%s, month:%s, total:%s",
+               hour_usage_s, day_usage_s, week_usage_s, month_usage_s,
+               total_usage_s);
       Particle.publish("usage",  msg, PRIVATE);
    }
    
@@ -99,7 +99,8 @@ void loop()
       obs_hour.second = total_usage;
       prev_hour = Time.hour();
    }
-   hour_usage_s = String(total_usage - obs_hour.second, 2);
+   snprintf(hour_usage_s, sizeof(hour_usage_s), "%.2f",
+            total_usage - obs_hour.second);
 
    // useage for current day
    static int prev_day = -1;
@@ -109,7 +110,7 @@ void loop()
       obs_day.second = total_usage;
       prev_day = Time.day();
    }
-   day_usage_s = String(total_usage - obs_day.second, 1);
+   snprintf(day_usage_s, sizeof(day_usage_s), "%.2f", total_usage - obs_day.second);
 
    // useage for current week
    static int prev_weekday = -1;
@@ -119,7 +120,7 @@ void loop()
       obs_week.second = total_usage;
       prev_weekday = Time.weekday();
    }
-   week_usage_s = String(total_usage - obs_week.second, 1);
+   snprintf(week_usage_s, sizeof(week_usage_s), "%.2f", total_usage - obs_week.second);
 
    // usage for current month
    static int prev_month = -1;
@@ -129,6 +130,6 @@ void loop()
       obs_month.second = total_usage;
       prev_month = Time.month();
    }
-   month_usage_s = String(total_usage - obs_month.second, 1);
+   snprintf(month_usage_s, sizeof(month_usage_s), "%.2f", total_usage - obs_month.second);
 
 }
