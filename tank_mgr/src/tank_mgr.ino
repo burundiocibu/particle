@@ -54,10 +54,10 @@ jcl::Addr t_ambient_addr(jcl::string_to_Addr("28ff99e33118017c"));
 void loop()
 {
    if (sensor.read(t_photon_addr, 5))
-      t_photon_s = String(sensor.fahrenheit(), 1);
+      t_photon_s = String(sensor.fahrenheit(), 2);
 
    if (sensor.read(t_ambient_addr, 5))
-      t_ambient_s = String(sensor.fahrenheit(), 1);
+      t_ambient_s = String(sensor.fahrenheit(), 2);
    
    // get the min/max temps along the pipe at this time
    double t_min=999, t_max=-999;
@@ -76,8 +76,8 @@ void loop()
    }
    if (t_max - t_min < 15)
    {
-      tmin_pipe_s = String(t_min, 1);
-      tmax_pipe_s = String(t_max, 1);
+      tmin_pipe_s = String(t_min, 2);
+      tmax_pipe_s = String(t_max, 2);
    }
    else
       range_errors++;
@@ -86,12 +86,14 @@ void loop()
    static uint32_t last_publish=0;  // seconds since the unix epoch
    if (Time.now() - last_publish > 300)
    {
-      Particle.publish("t_photon", t_photon_s, PRIVATE);
-      #Particle.publish("t_ambient", t_ambient_s, PRIVATE);
-      #Particle.publish("tmin_pipe", tmin_pipe_s, PRIVATE);
-      #Particle.publish("tmax_pipe", tmax_pipe_s, PRIVATE);
-      #Particle.publish("read_errors", String(read_errors), PRIVATE);
-      #Particle.publish("range_errors", String(range_errors), PRIVATE);
-      #last_publish = Time.now();
+      String msg =
+         "t_photon:" + t_photon_s +
+         ", t_ambient:" + t_ambient_s +
+         ", tmin_pipe:" + tmin_pipe_s +
+         ", tmax_pipe:" + tmax_pipe_s +
+         ", read_errors:" + String(read_errors) +
+         ", range_errors:", String(range_errors);
+      Particle.publish(msg, PRIVATE);
+      last_publish = Time.now();
    }
 }

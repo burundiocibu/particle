@@ -29,7 +29,7 @@ typedef std::map<unsigned long, unsigned long> History;
 
 // These are intended to store the useage at the start
 // of the indicated time
-retained Obs obs_hour, obs_day, obs_week, obs_month, obs_user;
+Obs obs_hour, obs_day, obs_week, obs_month, obs_user;
 
 
 void setup()
@@ -76,11 +76,10 @@ void loop()
    double dt = 1.666e-5 * (curr.first - prev.first); // dt in minutes
    double flow_rate = use/dt; // gallons/min
    snprintf(flow_rate_s, sizeof(flow_rate_s), "%.2f", flow_rate);
-//   if (flow_rate > 0)
-//      Particle.publish("rate", String(total_usage, 2) + " gal, " +
-//                       String(flow_rate, 2) + " gpm, " +
-//                       String(60 * dt, 2) + " sec" , PRIVATE);
-
+   if (flow_rate > 0)
+      Particle.publish("rate", String(total_usage, 2) + " gal, " +
+                       String(flow_rate, 2) + " gpm, " +
+                       String(60 * dt, 2) + " sec" , PRIVATE);
 
    static int prev_hour=-1;
    if (Time.hour() != prev_hour)
