@@ -13,6 +13,7 @@ int ow_gnd=D3;
 
 String tmin_pipe_s;
 String tmax_pipe_s;
+String t_pipe_s;
 String t_photon_s;
 String t_ambient_s;
 int read_errors=0;
@@ -27,6 +28,7 @@ void setup()
 
    Particle.variable("tmin_pipe", tmin_pipe_s);
    Particle.variable("tmax_pipe", tmax_pipe_s);
+   Particle.variable("t_pipe", t_pipe_s);
    Particle.variable("t_photon", t_photon_s);
    Particle.variable("t_ambient", t_ambient_s);
 
@@ -62,6 +64,7 @@ void loop()
    // get the min/max temps along the pipe at this time
    double t_min=999, t_max=-999;
    double t_sum=0;
+   String all_temps;
    int n_read;
    for (auto it = pipeSensors.begin(); it != pipeSensors.end(); ++it)
    {
@@ -70,10 +73,16 @@ void loop()
          double t=sensor.fahrenheit();
          if (t>t_max) t_max = t;
          if (t<t_min) t_min = t;
+         if (all_temps.length() > 0)
+            all_temps += ", ";
+         all_temps += String(t, 2);
       }
       else
          read_errors++;
    }
+
+   t_pipe_s = all_temps;
+   // Only publish new min/max if they are 'reasonable'
    if (t_max - t_min < 15)
    {
       tmin_pipe_s = String(t_min, 2);
@@ -91,6 +100,7 @@ void loop()
          ", t_ambient:" + t_ambient_s +
          ", tmin_pipe:" + tmin_pipe_s +
          ", tmax_pipe:" + tmax_pipe_s +
+         ", t_pipe:" + t_pipe_s +
          ", read_errors:" + String(read_errors) +
          ", range_errors:", String(range_errors);
       Particle.publish(msg, PRIVATE);
