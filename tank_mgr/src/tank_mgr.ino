@@ -60,7 +60,7 @@ void loop()
 
    if (sensor.read(t_ambient_addr, 5))
       t_ambient_s = String(sensor.fahrenheit(), 2);
-   
+
    // get the min/max temps along the pipe at this time
    double t_min=999, t_max=-999;
    double t_sum=0;
@@ -80,9 +80,11 @@ void loop()
       else
          read_errors++;
    }
-
+   
+   //  Always update the string of all temps
    t_pipe_s = all_temps;
-   // Only publish new min/max if they are 'reasonable'
+
+   // Only update new min/max if they are 'reasonable'
    if (t_max - t_min < 15)
    {
       tmin_pipe_s = String(t_min, 2);
@@ -95,6 +97,7 @@ void loop()
    static uint32_t last_publish=0;  // seconds since the unix epoch
    if (Time.now() - last_publish > 300)
    {
+     
       String msg =
          "t_photon:" + t_photon_s +
          ", t_ambient:" + t_ambient_s +
@@ -103,7 +106,7 @@ void loop()
          ", t_pipe:" + t_pipe_s +
          ", read_errors:" + String(read_errors) +
          ", range_errors:", String(range_errors);
-      Particle.publish(msg, PRIVATE);
+      Particle.publish("status",msg, PRIVATE);
       last_publish = Time.now();
    }
 }
