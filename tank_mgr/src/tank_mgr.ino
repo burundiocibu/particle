@@ -20,18 +20,18 @@ int range_errors=0;
 
 void setup()
 {
-  pinMode(ow_vcc, OUTPUT);
-  pinMode(ow_gnd, OUTPUT);
-  digitalWrite(ow_vcc, HIGH);
-  digitalWrite(ow_gnd, LOW);
+   pinMode(ow_vcc, OUTPUT);
+   pinMode(ow_gnd, OUTPUT);
+   digitalWrite(ow_vcc, HIGH);
+   digitalWrite(ow_gnd, LOW);
 
-  Particle.variable("tmin_pipe", tmin_pipe_s);
-  Particle.variable("tmax_pipe", tmax_pipe_s);
-  Particle.variable("t_photon", t_photon_s);
-  Particle.variable("t_ambient", t_ambient_s);
+   Particle.variable("tmin_pipe", tmin_pipe_s);
+   Particle.variable("tmax_pipe", tmax_pipe_s);
+   Particle.variable("t_photon", t_photon_s);
+   Particle.variable("t_ambient", t_ambient_s);
 
-  Particle.variable("read_errors", read_errors);
-  Particle.variable("range_errors", range_errors);
+   Particle.variable("read_errors", read_errors);
+   Particle.variable("range_errors", range_errors);
 }
 
 
